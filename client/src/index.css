@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-200 dark:border-gray-700;
+  }
+
+  body {
+    @apply bg-white dark:bg-brand-dark text-brand dark:text-gray-100 font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand dark:bg-white text-white dark:text-brand px-6 py-3 text-sm font-medium tracking-widest uppercase transition-all duration-300 hover:bg-accent hover:dark:bg-accent hover:dark:text-white disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-outline {
+    @apply border border-brand dark:border-white text-brand dark:text-white px-6 py-3 text-sm font-medium tracking-widest uppercase transition-all duration-300 hover:bg-brand hover:text-white dark:hover:bg-white dark:hover:text-brand;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-white px-6 py-3 text-sm font-medium tracking-widest uppercase transition-all duration-300 hover:bg-accent-dark;
+  }
+
+  .input {
+    @apply w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-brand dark:text-white px-4 py-3 text-sm focus:outline-none focus:border-accent dark:focus:border-accent transition-colors;
+  }
+
+  .card {
+    @apply bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700;
+  }
+
+  .section-title {
+    @apply text-2xl md:text-3xl font-display font-medium tracking-tight;
+  }
+
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .badge {
+    @apply inline-block text-xs font-semibold tracking-widest uppercase px-2 py-1;
+  }
+
+  .badge-sale {
+    @apply badge bg-red-500 text-white;
+  }
+
+  .badge-new {
+    @apply badge bg-brand dark:bg-white text-white dark:text-brand;
+  }
+
+  .badge-trending {
+    @apply badge bg-accent text-white;
+  }
+}
+
+/* Hero section overlay text */
+.hero-text-shadow {
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Smooth transition for theme */
+* {
+  transition-property: background-color, border-color, color;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+
+/* Disable transition on elements that shouldn't animate */
+img,
+video,
+svg {
+  transition: none;
+}

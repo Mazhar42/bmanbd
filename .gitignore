@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+server/node_modules/
+client/node_modules/
+
+# Build artifacts
+dist/
+build/
+client/dist/
+server/dist/
+coverage/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.production.example
+!client/.env.example
+!server/.env.example
+!server/.env.production.example
+
+# Runtime/generated data
+server/uploads/*
+!server/uploads/.gitkeep
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
