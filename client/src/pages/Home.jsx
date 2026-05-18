@@ -60,13 +60,18 @@ const DESKTOP_TABS = [
   { label: "Shirt", filter: { isFeatured: "true", category: "shirt" } },
   { label: "Pant", filter: { isFeatured: "true", category: "pant" } },
   { label: "Panjabi", filter: { isFeatured: "true", category: "panjabi" } },
+  { label: "T-shirts", filter: { isNewArrival: "true" } },
+  { label: "Polo", filter: { isNewArrival: "true" } },
+  { label: "Shorts", filter: { isNewArrival: "true" } },
 ];
 
 const MOBILE_TABS = [
   { label: "Shirt", filter: { isFeatured: "true", category: "shirt" } },
   { label: "Pant", filter: { isFeatured: "true", category: "pant" } },
   { label: "Panjabi", filter: { isFeatured: "true", category: "panjabi" } },
-  { label: "New", filter: { isNewArrival: "true" } },
+  { label: "T-shirts", filter: { isNewArrival: "true" } },
+  { label: "Polo", filter: { isNewArrival: "true" } },
+  { label: "Shorts", filter: { isNewArrival: "true" } },
   { label: "Trending", filter: { isTrending: "true" } },
   { label: "Featured", filter: { isFeatured: "true" } },
 ];
