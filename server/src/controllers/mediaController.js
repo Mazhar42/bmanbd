@@ -15,6 +15,24 @@ const resolveMediaFolder = (folderFromBody, fallbackFolder) => {
   return folder.startsWith("/") ? folder : `/${folder}`;
 };
 
+const sanitizeImageKitName = (value, fallback = "bmanMedia") => {
+  const normalized = String(value || "")
+    .trim()
+    .replace(/[\/\s]+/g, "_")
+    .replace(/[^a-zA-Z0-9_-]/g, "");
+  return normalized || fallback;
+};
+
+const resolveImageKitFolder = ({ folderFromBody, folderKey, baseNamespace }) => {
+  if (folderFromBody) {
+    return sanitizeImageKitName(folderFromBody, sanitizeImageKitName(baseNamespace));
+  }
+
+  const base = sanitizeImageKitName(baseNamespace, "bmanMedia");
+  const key = sanitizeImageKitName(folderKey || "products", "products");
+  return `${base}_${key}`;
+};
+
 const getOptimizationConfig = () => {
   const width = Number(
     process.env.MEDIA_IMAGE_MAX_WIDTH || process.env.IMAGEKIT_MAX_WIDTH || 1600,
@@ -74,10 +92,11 @@ const uploadImage = async (req, res, next) => {
       mediaStorage === "cloudinary" && cloudinaryConfigured;
 
     if (shouldUseImageKit) {
-      const folder = resolveMediaFolder(
-        req.body?.folder,
-        process.env.IMAGEKIT_FOLDER,
-      );
+      const folder = resolveImageKitFolder({
+        folderFromBody: req.body?.folder,
+        folderKey: req.body?.folderKey || req.body?.mediaType,
+        baseNamespace: process.env.IMAGEKIT_FOLDER,
+      });
 
       let filePayload = req.file.path;
       let fileName = req.file.originalname || req.file.filename;

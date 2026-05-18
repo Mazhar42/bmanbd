@@ -14,7 +14,6 @@ services:
       - ./server/.env
     environment:
       MONGO_URI: mongodb://mongo:27017/bman
-      MEDIA_STORAGE: local
     restart: unless-stopped
     expose:
       - "5000"
