@@ -10,6 +10,9 @@ const { attachCsrfToken, requireCsrf } = require("./middleware/csrf");
 
 const app = express();
 
+// Trust reverse proxy (Nginx) to accurately get user IPs for rate-limiting
+app.set("trust proxy", 1);
+
 // Normalize URL (e.g. //api/products -> /api/products)
 app.use((req, res, next) => {
   if (req.url.includes("//")) {
