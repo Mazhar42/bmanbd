@@ -122,7 +122,7 @@ function FeaturedProducts() {
       </div>
 
       {/* Mobile category pills: 3 columns x 2 rows, excludes "All" */}
-      <div className="md:hidden grid grid-cols-3 gap-2 mb-8 max-w-xs mx-auto place-items-center">
+      <div className="md:hidden grid grid-cols-4 gap-2 mb-8 max-w-xs mx-auto place-items-center">
         {MOBILE_TABS.map((t, i) => (
           <button
             key={t.label}

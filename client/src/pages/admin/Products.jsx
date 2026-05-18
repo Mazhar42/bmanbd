@@ -41,6 +41,7 @@ const EMPTY_VARIANT = {
   color: "",
   colorHex: "#000000",
   sku: "",
+  barcode: "",
   price: "",
   discountPrice: "",
   stock: "",
@@ -83,6 +84,14 @@ function VariantRow({ variant, onUpdate, onDelete, onDuplicate }) {
           value={variant.sku}
           onChange={(e) => onUpdate({ ...variant, sku: e.target.value })}
           placeholder="SKU"
+          className="input py-1 text-xs w-24"
+        />
+      </td>
+      <td className="py-2 pr-2">
+        <input
+          value={variant.barcode || ""}
+          onChange={(e) => onUpdate({ ...variant, barcode: e.target.value })}
+          placeholder="Barcode"
           className="input py-1 text-xs w-24"
         />
       </td>
@@ -174,7 +183,7 @@ function ProductModal({ product, categories, onClose, mode }) {
             size: v.size,
             color: v.color,
             colorHex: v.colorHex,
-            sku: autoSku,
+            sku: autoSku, barcode: v.barcode,
             price: Number(v.price),
             stock: Number(v.stock) || 0,
           };
@@ -380,7 +389,7 @@ function ProductModal({ product, categories, onClose, mode }) {
                         "Size",
                         "Color",
                         "Hex",
-                        "SKU",
+                        "SKU", "Barcode",
                         "Price",
                         "Sale",
                         "Stock",

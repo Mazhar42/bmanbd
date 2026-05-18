@@ -73,11 +73,22 @@ const getProducts = async (req, res, next) => {
     if (isNewArrival === "true") filter.isNewArrival = true;
     if (isTrending === "true") filter.isTrending = true;
     if (search) {
+      const variantMatchIds = await ProductVariant.find({
+        $or: [
+          { sku: { $regex: search, $options: "i" } },
+          { barcode: { $regex: search, $options: "i" } },
+        ],
+      }).distinct("product");
+
       filter.$or = [
         { name: { $regex: search, $options: "i" } },
         { tags: { $regex: search, $options: "i" } },
         { description: { $regex: search, $options: "i" } },
       ];
+
+      if (variantMatchIds.length) {
+        filter.$or.push({ _id: { $in: variantMatchIds } });
+      }
     }
 
     // Pre-filter by variant attributes (price, size, color) BEFORE paginating

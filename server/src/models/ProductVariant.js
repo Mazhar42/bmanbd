@@ -11,6 +11,7 @@ const productVariantSchema = new mongoose.Schema(
     color: { type: String, required: true },
     colorHex: { type: String },
     sku: { type: String, required: true, unique: true },
+    barcode: { type: String, sparse: true },
     price: { type: Number, required: true, min: 0 },
     discountPrice: { type: Number, min: 0 },
     stock: { type: Number, required: true, default: 0, min: 0 },

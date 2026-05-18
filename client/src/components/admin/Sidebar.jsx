@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
+  Layers,
   Archive,
   ShoppingCart,
   Users,
@@ -18,6 +19,7 @@ import { authApi } from "../../services/api";
 
 const links = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/admin/categories", label: "Categories", icon: Layers },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/inventory", label: "Inventory", icon: Archive },
   { to: "/admin/orders", label: "Orders", icon: ShoppingCart },
