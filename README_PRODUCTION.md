@@ -2,9 +2,9 @@
 
 This is the shortest path to deploy with:
 
-- Store: https://www.yourdomain.com
-- Admin: https://admin.yourdomain.com
-- API: https://api.yourdomain.com
+- Store: https://www.bmanbd.com
+- Admin: https://admin.bmanbd.com
+- API: https://api.bmanbd.com
 
 MongoDB remains private inside Docker network.
 
