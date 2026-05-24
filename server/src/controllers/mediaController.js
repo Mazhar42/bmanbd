@@ -9,6 +9,15 @@ const safeUnlink = (filePath) => {
   fs.unlink(filePath, () => {});
 };
 
+const buildLocalMediaResponse = (req, fileName, extra = {}) => ({
+  success: true,
+  media: {
+    url: `${req.protocol}://${req.get("host")}/uploads/${fileName}`,
+    provider: "local",
+    ...extra,
+  },
+});
+
 const resolveMediaFolder = (folderFromBody, fallbackFolder) => {
   const folder = (folderFromBody || fallbackFolder || "bman/products").trim();
   if (!folder) return "/bman/products";
@@ -260,28 +269,51 @@ const uploadImage = async (req, res, next) => {
     const optimizedPath = path.join(uploadsDir, optimizedName);
 
     const { width, quality } = getOptimizationConfig();
-    await sharp(req.file.path)
-      .rotate()
-      .resize({
-        width,
-        height: width,
-        fit: "inside",
-        withoutEnlargement: true,
-      })
-      .webp({ quality })
-      .toFile(optimizedPath);
+    try {
+      await sharp(req.file.path)
+        .rotate()
+        .resize({
+          width,
+          height: width,
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+        .webp({ quality })
+        .toFile(optimizedPath);
 
-    safeUnlink(req.file.path);
-
-    const localUrl = `${req.protocol}://${req.get("host")}/uploads/${optimizedName}`;
-    return res.status(201).json({
-      success: true,
-      media: {
-        url: localUrl,
-        provider: "local",
-      },
-    });
+      safeUnlink(req.file.path);
+      return res
+        .status(201)
+        .json(buildLocalMediaResponse(req, optimizedName, { optimized: true }));
+    } catch (optimizeErr) {
+      // If image optimization fails in production (unsupported/corrupt image,
+      // missing native dependency, etc.), still accept upload via original file.
+      console.error("Local image optimization failed; using original upload", {
+        error: optimizeErr?.message,
+      });
+      return res
+        .status(201)
+        .json(
+          buildLocalMediaResponse(req, req.file.filename, { optimized: false }),
+        );
+    }
   } catch (err) {
+    // Last-resort fallback: if a provider upload fails but multer has already
+    // stored the file locally, return that local file URL instead of 500.
+    if (req.file?.filename && fs.existsSync(req.file.path || "")) {
+      console.error(
+        "Media provider upload failed; falling back to local file",
+        {
+          error: err?.message,
+        },
+      );
+      return res.status(201).json(
+        buildLocalMediaResponse(req, req.file.filename, {
+          optimized: false,
+          fallback: true,
+        }),
+      );
+    }
     next(err);
   }
 };

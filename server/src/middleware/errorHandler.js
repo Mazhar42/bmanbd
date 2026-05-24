@@ -2,6 +2,22 @@ const errorHandler = (err, req, res, next) => {
   let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   let message = err.message || "Server Error";
 
+  // Multer upload errors (file too large, invalid multipart, etc.)
+  if (err.name === "MulterError") {
+    statusCode = 400;
+    if (err.code === "LIMIT_FILE_SIZE") {
+      message = "Image is too large (max 10MB)";
+    } else {
+      message = err.message || "Invalid file upload";
+    }
+  }
+
+  // Manual upload validation errors from fileFilter
+  if (err.message === "Only image uploads are allowed") {
+    statusCode = 400;
+    message = err.message;
+  }
+
   // Mongoose bad ObjectId
   if (err.name === "CastError" && err.kind === "ObjectId") {
     statusCode = 404;
