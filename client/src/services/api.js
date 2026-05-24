@@ -190,8 +190,11 @@ export const mediaApi = {
     const formData = new FormData();
     formData.append("image", file);
     if (folder) formData.append("folder", folder);
+    // Set Content-Type to undefined to clear the axios instance default
+    // (application/json), letting the browser supply the correct
+    // multipart/form-data; boundary=... header automatically.
     return api.post("/media/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+      headers: { "Content-Type": undefined },
     });
   },
 };

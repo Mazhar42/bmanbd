@@ -181,7 +181,13 @@ function VariantRow({ variant, onUpdate, onDelete, onDuplicate }) {
 
 function ProductModal({ product, categories, onClose, mode }) {
   const qc = useQueryClient();
-  const [form, setForm] = useState(product || EMPTY_PRODUCT);
+  // Normalize category: the API returns a populated object {_id, name, slug};
+  // the server validator requires a plain ObjectId string.
+  const [form, setForm] = useState(
+    product
+      ? { ...product, category: product.category?._id || product.category }
+      : EMPTY_PRODUCT,
+  );
   const [variants, setVariants] = useState(
     product?.variants || [{ ...EMPTY_VARIANT, id: Date.now() }],
   );
@@ -994,6 +1000,7 @@ export default function AdminProducts() {
                   products.map((p) => (
                     <AnimatePresence key={p._id}>
                       <tr
+                        key={p._id}
                         onClick={() =>
                           setExpanded(expanded === p._id ? null : p._id)
                         }
@@ -1099,6 +1106,7 @@ export default function AdminProducts() {
 
                       {expanded === p._id && (
                         <motion.tr
+                          key={`${p._id}-expanded`}
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
