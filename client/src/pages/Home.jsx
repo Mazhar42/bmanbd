@@ -10,7 +10,7 @@ import useStore from "../store/useStore";
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 function HeroSection() {
-  const { data: settings } = useQuery({
+  const { data: settings, isFetched } = useQuery({
     queryKey: ["publicSettings"],
     queryFn: () => settingsApi.getPublic().then((r) => r.data.settings),
     staleTime: 5 * 60 * 1000,
@@ -21,6 +21,7 @@ function HeroSection() {
     (b) => b.isActive && b.imageUrl,
   );
   const isCustom = banners.length > 0;
+  const shouldShowFallback = isFetched && !isCustom;
 
   const [current, setCurrent] = useState(0);
   useEffect(() => {
@@ -50,13 +51,15 @@ function HeroSection() {
             loading="eager"
           />
         </AnimatePresence>
-      ) : (
+      ) : shouldShowFallback ? (
         <img
           src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&auto=format&fit=crop"
           alt="BMAN Journey"
           className="absolute inset-0 w-full h-full object-cover object-top"
           loading="eager"
         />
+      ) : (
+        <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 animate-pulse" />
       )}
 
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
@@ -94,7 +97,7 @@ function HeroSection() {
                   </div>
                 )}
               </>
-            ) : (
+            ) : shouldShowFallback ? (
               <>
                 <h1 className="text-5xl sm:text-6xl md:text-[10rem] font-display font-bold tracking-[0.15em] uppercase hero-text-shadow leading-none">
                   JOUR
@@ -119,7 +122,7 @@ function HeroSection() {
                   </Link>
                 </div>
               </>
-            )}
+            ) : null}
           </motion.div>
         </AnimatePresence>
       </div>
