@@ -272,9 +272,12 @@ export default function ProductDetail() {
                   {selectedSize || "Select"}
                 </span>
               </p>
-              <button className="text-xs text-gray-400 hover:text-accent underline">
+              <Link
+                to="/size-guide"
+                className="text-xs text-gray-400 hover:text-accent underline"
+              >
                 Size Guide
-              </button>
+              </Link>
             </div>
             <div className="flex gap-2 flex-wrap">
               {availableSizes.map(({ size, stock: qty }) => (

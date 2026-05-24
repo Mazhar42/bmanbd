@@ -6,6 +6,9 @@ const Category = require("../models/Category");
 const Product = require("../models/Product");
 const ProductVariant = require("../models/ProductVariant");
 const User = require("../models/User");
+const Order = require("../models/Order");
+const InventoryTransaction = require("../models/InventoryTransaction");
+const SiteSettings = require("../models/SiteSettings");
 
 const SIZES = ["S", "M", "L", "XL", "XXL"];
 const SHIRT_COLORS = [
@@ -27,6 +30,9 @@ const seed = async () => {
     Product.deleteMany(),
     ProductVariant.deleteMany(),
     User.deleteMany(),
+    Order.deleteMany(),
+    InventoryTransaction.deleteMany(),
+    SiteSettings.deleteMany(),
   ]);
   console.log("Cleared existing data");
 
@@ -292,11 +298,11 @@ const seed = async () => {
   // Admin user
   await User.create({
     name: "Admin",
-    email: "admin@bman.com",
-    password: "admin123",
+    email: "admin@bmanbd.com",
+    password: "09007860",
     role: "admin",
   });
-  console.log("Admin user created: admin@bman.com / admin123");
+  console.log("Admin user created: admin@bmanbd.com / 09007860");
 
   // ─── Products ─────────────────────────────────────────────────────────────
   const productsData = [

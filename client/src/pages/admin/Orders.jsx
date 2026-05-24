@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Filter, Eye, X } from "lucide-react";
+import { Search, Filter, Eye, X, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { orderApi } from "../../services/api";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
+import ConfirmModal from "../../components/admin/ConfirmModal";
 import { formatPrice } from "../../utils/helpers";
 
 const STATUSES = [
@@ -212,6 +213,18 @@ export default function AdminOrders() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const qc = useQueryClient();
+
+  const deleteMut = useMutation({
+    mutationFn: (id) => orderApi.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries(["adminOrders"]);
+      toast.success("Order deleted permanently");
+      setConfirmDeleteId(null);
+    },
+    onError: () => toast.error("Could not delete order"),
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["adminOrders", activeTab, search, page],
@@ -347,12 +360,20 @@ export default function AdminOrders() {
                     {new Date(order.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => setSelected(order)}
-                      className="text-gray-400 hover:text-accent transition-colors"
-                    >
-                      <Eye size={15} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setSelected(order)}
+                        className="text-gray-400 hover:text-accent transition-colors"
+                      >
+                        <Eye size={15} />
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(order._id)}
+                        className="text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -392,6 +413,19 @@ export default function AdminOrders() {
           />
         )}
       </AnimatePresence>
+
+      {confirmDeleteId && (
+        <ConfirmModal
+          title="Delete Order?"
+          message="Permanently delete this order? This cannot be undone."
+          confirmText="Delete Order"
+          cancelText="Keep Order"
+          isDanger
+          isLoading={deleteMut.isPending}
+          onConfirm={() => deleteMut.mutate(confirmDeleteId)}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
     </div>
   );
 }

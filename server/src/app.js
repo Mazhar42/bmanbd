@@ -83,7 +83,16 @@ app.use(attachCsrfToken);
 app.use(requireCsrf);
 
 // Local media file hosting fallback
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// Override helmet's default Cross-Origin-Resource-Policy: same-origin so that
+// images served from this origin can be loaded by the frontend on a different port/domain.
+app.use(
+  "/uploads",
+  (req, res, next) => {
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    next();
+  },
+  express.static(path.join(__dirname, "../uploads")),
+);
 
 // Logging
 if (process.env.NODE_ENV === "development") {

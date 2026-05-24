@@ -7,10 +7,12 @@ const {
   purchaseStock,
   getAlerts,
   getStats,
+  deleteTransaction,
 } = require("../controllers/inventoryController");
 const { protect, admin } = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const {
+  objectIdParam,
   inventoryQueryValidators,
   inventoryTransactionQueryValidators,
   inventoryAdjustValidators,
@@ -38,6 +40,11 @@ router.post(
   "/purchase",
   [protect, admin, ...inventoryPurchaseValidators, validate],
   purchaseStock,
+);
+router.delete(
+  "/transactions/:id",
+  [protect, admin, objectIdParam("id"), validate],
+  deleteTransaction,
 );
 
 module.exports = router;

@@ -23,9 +23,16 @@ const sanitizeImageKitName = (value, fallback = "bmanMedia") => {
   return normalized || fallback;
 };
 
-const resolveImageKitFolder = ({ folderFromBody, folderKey, baseNamespace }) => {
+const resolveImageKitFolder = ({
+  folderFromBody,
+  folderKey,
+  baseNamespace,
+}) => {
   if (folderFromBody) {
-    return sanitizeImageKitName(folderFromBody, sanitizeImageKitName(baseNamespace));
+    return sanitizeImageKitName(
+      folderFromBody,
+      sanitizeImageKitName(baseNamespace),
+    );
   }
 
   const base = sanitizeImageKitName(baseNamespace, "bmanMedia");
@@ -35,15 +42,15 @@ const resolveImageKitFolder = ({ folderFromBody, folderKey, baseNamespace }) => 
 
 const getOptimizationConfig = () => {
   const width = Number(
-    process.env.MEDIA_IMAGE_MAX_WIDTH || process.env.IMAGEKIT_MAX_WIDTH || 1600,
+    process.env.MEDIA_IMAGE_MAX_WIDTH || process.env.IMAGEKIT_MAX_WIDTH || 1280,
   );
   const quality = Number(
-    process.env.MEDIA_IMAGE_QUALITY || process.env.IMAGEKIT_QUALITY || 84,
+    process.env.MEDIA_IMAGE_QUALITY || process.env.IMAGEKIT_QUALITY || 80,
   );
 
   return {
-    width: Number.isFinite(width) ? width : 1600,
-    quality: Number.isFinite(quality) ? quality : 84,
+    width: Number.isFinite(width) ? width : 1280,
+    quality: Number.isFinite(quality) ? quality : 80,
   };
 };
 
@@ -246,19 +253,22 @@ const uploadImage = async (req, res, next) => {
     }
 
     const uploadsDir = path.dirname(req.file.path);
-    const baseName = path.parse(req.file.filename).name;
-    const optimizedName = `${baseName}.webp`;
+    // Always generate a fresh unique output name so that the output path can
+    // never collide with the multer temp path (happens when the source file is
+    // already .webp — sharp cannot read and write the same path simultaneously).
+    const optimizedName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.webp`;
     const optimizedPath = path.join(uploadsDir, optimizedName);
 
+    const { width, quality } = getOptimizationConfig();
     await sharp(req.file.path)
       .rotate()
       .resize({
-        width: 1600,
-        height: 1600,
+        width,
+        height: width,
         fit: "inside",
         withoutEnlargement: true,
       })
-      .webp({ quality: 82 })
+      .webp({ quality })
       .toFile(optimizedPath);
 
     safeUnlink(req.file.path);

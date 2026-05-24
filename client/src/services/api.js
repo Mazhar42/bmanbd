@@ -15,9 +15,28 @@ const api = axios.create({
 });
 
 // Attach token
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
   const token = useStore.getState().token;
-  const csrfToken = useStore.getState().csrfToken;
+  let csrfToken = useStore.getState().csrfToken;
+
+  // For non-safe methods, ensure we have a CSRF token
+  const isSafeMethod = ["get", "head", "options"].includes(
+    config.method?.toLowerCase(),
+  );
+
+  if (!isSafeMethod && !csrfToken) {
+    try {
+      // Fetch a new token if we don't have one
+      const { data } = await axios.get(`${baseURL}/auth/csrf`, {
+        withCredentials: true,
+      });
+      csrfToken = data.csrfToken;
+      useStore.getState().setCsrfToken(csrfToken);
+    } catch (err) {
+      console.error("Critical: Failed to fetch CSRF token", err);
+    }
+  }
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -99,6 +118,15 @@ export const productApi = {
   updateVariant: (id, vid, data) =>
     api.put(`/products/${id}/variants/${vid}`, data),
   deleteVariant: (id, vid) => api.delete(`/products/${id}/variants/${vid}`),
+  downloadTemplate: () =>
+    api.get("/products/import/template", { responseType: "blob" }),
+  importXlsx: (file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return api.post("/products/import", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };
 
 // ─── Categories ────────────────────────────────────────────────
@@ -119,6 +147,7 @@ export const orderApi = {
   getAll: (params) => api.get("/orders", { params }),
   getOne: (id) => api.get(`/orders/${id}`),
   updateStatus: (id, data) => api.put(`/orders/${id}/status`, data),
+  delete: (id) => api.delete(`/orders/${id}`),
 };
 
 // ─── Inventory ────────────────────────────────────────────────
@@ -129,6 +158,7 @@ export const inventoryApi = {
   purchase: (data) => api.post("/inventory/purchase", data),
   getAlerts: () => api.get("/inventory/alerts"),
   getStats: () => api.get("/inventory/stats"),
+  deleteTransaction: (id) => api.delete(`/inventory/transactions/${id}`),
 };
 
 // ─── Users (Admin) ────────────────────────────────────────────
@@ -137,6 +167,7 @@ export const userApi = {
   getOne: (id) => api.get(`/users/${id}`),
   update: (id, data) => api.put(`/users/${id}`, data),
   getDashboardStats: () => api.get("/users/dashboard-stats"),
+  delete: (id) => api.delete(`/users/${id}`),
 };
 
 // ─── Site Settings (CMS-like config) ────────────────────────
@@ -148,9 +179,10 @@ export const settingsApi = {
 
 // ─── Media ───────────────────────────────────────────────────
 export const mediaApi = {
-  uploadImage: (file) => {
+  uploadImage: (file, folder) => {
     const formData = new FormData();
     formData.append("image", file);
+    if (folder) formData.append("folder", folder);
     return api.post("/media/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });

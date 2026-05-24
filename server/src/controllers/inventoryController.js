@@ -6,7 +6,15 @@ const Product = require("../models/Product");
 // @route   GET /api/inventory
 const getInventory = async (req, res, next) => {
   try {
-    const { lowStock, category, search, page = 1, limit = 20, minStock, maxStock } = req.query;
+    const {
+      lowStock,
+      category,
+      search,
+      page = 1,
+      limit = 20,
+      minStock,
+      maxStock,
+    } = req.query;
     const LOW_STOCK_THRESHOLD = 10;
 
     let variantFilter = { isActive: true };
@@ -19,7 +27,10 @@ const getInventory = async (req, res, next) => {
       variantFilter.stock = { ...variantFilter.stock, $lte: Number(maxStock) };
     }
     if (lowStock === "true") {
-      variantFilter.stock = { ...variantFilter.stock, $lt: LOW_STOCK_THRESHOLD };
+      variantFilter.stock = {
+        ...variantFilter.stock,
+        $lt: LOW_STOCK_THRESHOLD,
+      };
     }
 
     // Product-based filtering (Category, Search, Status)
@@ -37,7 +48,8 @@ const getInventory = async (req, res, next) => {
       // If category is provided, we only want variants of products in that category
       let categoryProductIds = null;
       if (category) {
-        const allProductsInCategory = await Product.find(productQuery).select("_id");
+        const allProductsInCategory =
+          await Product.find(productQuery).select("_id");
         categoryProductIds = allProductsInCategory.map((p) => p._id);
       }
 
@@ -54,8 +66,12 @@ const getInventory = async (req, res, next) => {
         variantFilter.$and.push({ product: { $in: categoryProductIds } });
       } else {
         // Even without category, we only want variants of non-archived products
-        const allActiveProducts = await Product.find({ status: { $ne: "archived" } }).select("_id");
-        variantFilter.$and.push({ product: { $in: allActiveProducts.map(p => p._id) } });
+        const allActiveProducts = await Product.find({
+          status: { $ne: "archived" },
+        }).select("_id");
+        variantFilter.$and.push({
+          product: { $in: allActiveProducts.map((p) => p._id) },
+        });
       }
     } else {
       // No search, but may have category
@@ -266,6 +282,21 @@ const getStats = async (req, res, next) => {
   }
 };
 
+// @desc    Permanently delete an inventory transaction
+// @route   DELETE /api/inventory/transactions/:id
+const deleteTransaction = async (req, res, next) => {
+  try {
+    const tx = await InventoryTransaction.findByIdAndDelete(req.params.id);
+    if (!tx)
+      return res
+        .status(404)
+        .json({ success: false, message: "Transaction not found" });
+    res.json({ success: true, message: "Transaction permanently deleted" });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getInventory,
   getTransactions,
@@ -273,4 +304,5 @@ module.exports = {
   purchaseStock,
   getAlerts,
   getStats,
+  deleteTransaction,
 };

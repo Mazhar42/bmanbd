@@ -20,6 +20,7 @@ import AdminPOS from "./pages/admin/POS";
 import AdminAnalytics from "./pages/admin/Analytics";
 import AdminSettings from "./pages/admin/Settings";
 import OAuthCallback from "./pages/OAuthCallback";
+import SizeGuide from "./pages/SizeGuide";
 import { authApi } from "./services/api";
 import useStore from "./store/useStore";
 
@@ -85,6 +86,7 @@ export default function App() {
         <Route path="account" element={<Account />} />
         <Route path="account/oauth/callback" element={<OAuthCallback />} />
         <Route path="wishlist" element={<Wishlist />} />
+        <Route path="size-guide" element={<SizeGuide />} />
       </Route>
 
       {/* Admin dashboard */}

@@ -5,6 +5,7 @@ const {
   getUser,
   updateUser,
   getDashboardStats,
+  deleteUser,
 } = require("../controllers/userController");
 const { protect, admin, adminOnly } = require("../middleware/auth");
 const validate = require("../middleware/validate");
@@ -25,6 +26,11 @@ router.put(
   "/:id",
   [protect, adminOnly, ...userUpdateValidators, validate],
   updateUser,
+);
+router.delete(
+  "/:id",
+  [protect, adminOnly, objectIdParam("id"), validate],
+  deleteUser,
 );
 
 module.exports = router;

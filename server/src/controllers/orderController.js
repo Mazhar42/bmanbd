@@ -291,6 +291,22 @@ const createPOSOrder = async (req, res, next) => {
   }
 };
 
+// @desc    Permanently delete an order
+// @route   DELETE /api/orders/:id
+const deleteOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order)
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    await order.deleteOne();
+    res.json({ success: true, message: "Order permanently deleted" });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createOrder,
   getMyOrders,
@@ -298,4 +314,5 @@ module.exports = {
   getAllOrders,
   updateOrderStatus,
   createPOSOrder,
+  deleteOrder,
 };

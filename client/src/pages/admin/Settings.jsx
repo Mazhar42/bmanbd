@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { authApi, mediaApi, settingsApi } from "../../services/api";
 import useStore from "../../store/useStore";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
+import ImageUploader from "../../components/admin/ImageUploader";
 
 function ChangePasswordForm() {
   const [form, setForm] = useState({
@@ -330,26 +331,13 @@ function SiteSettingsSection() {
 
       <div>
         <label className="text-xs font-semibold tracking-widest uppercase block mb-2 text-gray-500">
-          Logo URL
+          Logo
         </label>
-        <div className="flex flex-col md:flex-row gap-3">
-          <input
-            className="input"
-            value={form.logo}
-            onChange={(e) => updateField("logo", e.target.value)}
-            placeholder="https://..."
-          />
-          <label className="btn-outline cursor-pointer text-center md:min-w-40 py-3">
-            {uploading ? "Uploading..." : "Upload Logo"}
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => uploadLogo(e.target.files?.[0])}
-              disabled={uploading}
-            />
-          </label>
-        </div>
+        <ImageUploader
+          folder="bman/settings"
+          value={form.logo}
+          onChange={(url) => updateField("logo", url)}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -470,15 +458,13 @@ function SiteSettingsSection() {
                 }
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <input
-                className="input"
-                placeholder="Image URL"
-                value={banner.imageUrl || ""}
-                onChange={(e) =>
-                  updateBanner(index, "imageUrl", e.target.value)
-                }
-              />
+            <ImageUploader
+              folder="bman/banners"
+              label="Banner Image"
+              value={banner.imageUrl || ""}
+              onChange={(url) => updateBanner(index, "imageUrl", url)}
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <input
                 className="input"
                 placeholder="CTA Label"

@@ -1,6 +1,7 @@
 const Product = require("../models/Product");
 const ProductVariant = require("../models/ProductVariant");
 const Category = require("../models/Category");
+const XLSX = require("xlsx");
 
 // @desc    Get all products (with filtering, sorting, pagination)
 // @route   GET /api/products
@@ -237,16 +238,14 @@ const updateProduct = async (req, res, next) => {
 // @route   DELETE /api/products/:id
 const deleteProduct = async (req, res, next) => {
   try {
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      { status: "archived" },
-      { new: true },
-    );
+    const product = await Product.findById(req.params.id);
     if (!product)
       return res
         .status(404)
         .json({ success: false, message: "Product not found" });
-    res.json({ success: true, message: "Product archived" });
+    await ProductVariant.deleteMany({ product: req.params.id });
+    await product.deleteOne();
+    res.json({ success: true, message: "Product permanently deleted" });
   } catch (err) {
     next(err);
   }
@@ -304,6 +303,289 @@ const deleteVariant = async (req, res, next) => {
   }
 };
 
+// ─── XLSX Import ──────────────────────────────────────────────
+
+// @desc    Download blank import template
+// @route   GET /api/products/import/template
+const getImportTemplate = (req, res) => {
+  const headers = [
+    "name",
+    "description",
+    "category",
+    "brand",
+    "gender",
+    "tags",
+    "fabric",
+    "fit",
+    "status",
+    "featured",
+    "new_arrival",
+    "trending",
+    "size",
+    "color",
+    "color_hex",
+    "sku",
+    "barcode",
+    "price",
+    "sale_price",
+    "stock",
+  ];
+  const examples = [
+    {
+      name: "Classic Oxford Shirt",
+      description: "Premium cotton oxford shirt",
+      category: "Shirt_Formal",
+      brand: "BMAN",
+      gender: "men",
+      tags: "oxford,formal,cotton",
+      fabric: "100% Cotton",
+      fit: "slim",
+      status: "active",
+      featured: "false",
+      new_arrival: "true",
+      trending: "false",
+      size: "M",
+      color: "White",
+      color_hex: "#FFFFFF",
+      sku: "",
+      barcode: "",
+      price: 1200,
+      sale_price: "",
+      stock: 50,
+    },
+    {
+      name: "Classic Oxford Shirt",
+      description: "Premium cotton oxford shirt",
+      category: "Shirt_Formal",
+      brand: "BMAN",
+      gender: "men",
+      tags: "oxford,formal,cotton",
+      fabric: "100% Cotton",
+      fit: "slim",
+      status: "active",
+      featured: "false",
+      new_arrival: "true",
+      trending: "false",
+      size: "L",
+      color: "White",
+      color_hex: "#FFFFFF",
+      sku: "",
+      barcode: "",
+      price: 1200,
+      sale_price: "",
+      stock: 30,
+    },
+    {
+      name: "Basic T-Shirt",
+      description: "Everyday cotton t-shirt",
+      category: "T-Shirt_Regular",
+      brand: "BMAN",
+      gender: "men",
+      tags: "tshirt,basic,cotton",
+      fabric: "100% Cotton",
+      fit: "regular",
+      status: "active",
+      featured: "false",
+      new_arrival: "false",
+      trending: "true",
+      size: "L",
+      color: "Black",
+      color_hex: "#000000",
+      sku: "",
+      barcode: "",
+      price: 650,
+      sale_price: "",
+      stock: 100,
+    },
+  ];
+  const ws = XLSX.utils.json_to_sheet(examples, { header: headers });
+  // Widen columns for readability
+  ws["!cols"] = headers.map((h) => ({ wch: Math.max(h.length + 2, 14) }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Products");
+  const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+  res.setHeader(
+    "Content-Disposition",
+    "attachment; filename=bman-import-template.xlsx",
+  );
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  res.send(buffer);
+};
+
+// @desc    Bulk-import products from xlsx
+// @route   POST /api/products/import
+const importProducts = async (req, res, next) => {
+  try {
+    if (!req.file)
+      return res
+        .status(400)
+        .json({ success: false, message: "No file uploaded" });
+
+    const wb = XLSX.read(req.file.buffer, { type: "buffer" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+    if (!rows.length)
+      return res
+        .status(400)
+        .json({ success: false, message: "Excel file is empty" });
+
+    const results = {
+      productsCreated: 0,
+      productsUpdated: 0,
+      variantsCreated: 0,
+      skipped: 0,
+      errors: [],
+    };
+    const VALID_GENDERS = ["men", "women", "unisex"];
+    const VALID_FITS = ["slim", "regular", "relaxed", "oversized"];
+    const VALID_STATUSES = ["active", "draft", "archived"];
+
+    // Group rows by product name so multiple rows = multiple variants
+    const productGroups = {};
+    for (const row of rows) {
+      const name = String(row.name || row.Name || "").trim();
+      if (!name) {
+        results.errors.push("Skipped row: missing product name");
+        results.skipped++;
+        continue;
+      }
+      if (!productGroups[name]) productGroups[name] = [];
+      productGroups[name].push(row);
+    }
+
+    for (const [productName, productRows] of Object.entries(productGroups)) {
+      try {
+        const firstRow = productRows[0];
+        const rawCategory = String(
+          firstRow.category || firstRow.Category || "",
+        ).trim();
+        if (!rawCategory) {
+          results.errors.push(`"${productName}": no category — skipped`);
+          results.skipped += productRows.length;
+          continue;
+        }
+
+        // Category path: split on "_" to support parent_child_grandchild hierarchy.
+        // e.g. "T-Shirt_Regular" → parent: T-Shirt, leaf: Regular
+        const categorySegments = rawCategory
+          .split("_")
+          .map((s) => s.trim())
+          .filter(Boolean);
+
+        let category = null;
+        let parentId = null;
+        for (const segment of categorySegments) {
+          const query = { name: new RegExp(`^${segment}$`, "i") };
+          if (parentId) query.parent = parentId;
+          let cat = await Category.findOne(query);
+          if (!cat) {
+            const data = { name: segment };
+            if (parentId) data.parent = parentId;
+            cat = await Category.create(data);
+          }
+          parentId = cat._id;
+          category = cat;
+        }
+
+        // Find or create product
+        let product = await Product.findOne({
+          name: new RegExp(`^${productName}$`, "i"),
+        });
+        if (!product) {
+          const tags = String(firstRow.tags || "")
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean);
+          product = await Product.create({
+            name: productName,
+            description: String(firstRow.description || "").trim(),
+            category: category._id,
+            brand: String(firstRow.brand || "BMAN").trim(),
+            gender: VALID_GENDERS.includes(
+              String(firstRow.gender).toLowerCase(),
+            )
+              ? String(firstRow.gender).toLowerCase()
+              : "men",
+            tags,
+            fabric: String(firstRow.fabric || "").trim(),
+            fit: VALID_FITS.includes(String(firstRow.fit).toLowerCase())
+              ? String(firstRow.fit).toLowerCase()
+              : undefined,
+            isFeatured: String(firstRow.featured).toLowerCase() === "true",
+            isNewArrival: String(firstRow.new_arrival).toLowerCase() === "true",
+            isTrending: String(firstRow.trending).toLowerCase() === "true",
+            status: VALID_STATUSES.includes(
+              String(firstRow.status).toLowerCase(),
+            )
+              ? String(firstRow.status).toLowerCase()
+              : "active",
+          });
+          results.productsCreated++;
+        } else {
+          results.productsUpdated++;
+        }
+
+        // Create variants for this product
+        const base = productName
+          .substring(0, 4)
+          .toUpperCase()
+          .replace(/\s/g, "");
+        for (const row of productRows) {
+          const size = String(row.size || row.Size || "M").trim();
+          const color = String(row.color || row.Color || "").trim();
+          const price = Number(row.price || row.Price);
+
+          if (!color || !price) {
+            results.errors.push(
+              `"${productName}": row missing color or price — skipped`,
+            );
+            results.skipped++;
+            continue;
+          }
+
+          const rawSku = String(row.sku || row.SKU || "").trim();
+          const sku =
+            rawSku ||
+            `${base}-${color.substring(0, 3).toUpperCase()}-${size}-${Date.now()}-${Math.floor(Math.random() * 9999)}`;
+
+          const exists = await ProductVariant.findOne({ sku });
+          if (exists) {
+            results.errors.push(`SKU "${sku}" already exists — skipped`);
+            results.skipped++;
+            continue;
+          }
+
+          const salePrice = Number(row.sale_price || row.discountPrice);
+          await ProductVariant.create({
+            product: product._id,
+            size,
+            color,
+            colorHex: String(row.color_hex || row.colorHex || "#000000").trim(),
+            sku,
+            barcode: String(row.barcode || "").trim() || undefined,
+            price,
+            ...(salePrice && salePrice < price
+              ? { discountPrice: salePrice }
+              : {}),
+            stock: Number(row.stock || row.Stock) || 0,
+          });
+          results.variantsCreated++;
+        }
+      } catch (err) {
+        results.errors.push(`"${productName}": ${err.message}`);
+      }
+    }
+
+    res.json({ success: true, results });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getProducts,
   getProduct,
@@ -313,4 +595,6 @@ module.exports = {
   createVariant,
   updateVariant,
   deleteVariant,
+  getImportTemplate,
+  importProducts,
 };

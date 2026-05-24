@@ -7,6 +7,7 @@ const {
   getAllOrders,
   updateOrderStatus,
   createPOSOrder,
+  deleteOrder,
 } = require("../controllers/orderController");
 const { protect, admin } = require("../middleware/auth");
 const validate = require("../middleware/validate");
@@ -35,6 +36,11 @@ router.put(
   "/:id/status",
   [protect, admin, ...orderStatusValidators, validate],
   updateOrderStatus,
+);
+router.delete(
+  "/:id",
+  [protect, admin, objectIdParam("id"), validate],
+  deleteOrder,
 );
 
 module.exports = router;

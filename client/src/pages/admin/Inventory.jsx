@@ -7,11 +7,13 @@ import {
   X,
   RefreshCcw,
   ShoppingBag,
+  Trash2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { inventoryApi } from "../../services/api";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
+import ConfirmModal from "../../components/admin/ConfirmModal";
 import { formatPrice } from "../../utils/helpers";
 
 function StockBadge({ stock }) {
@@ -135,6 +137,18 @@ export default function AdminInventory() {
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState(null); // { variant, mode }
   const [activeTab, setActiveTab] = useState("all"); // 'all' | 'low' | 'out'
+  const [confirmDeleteTxId, setConfirmDeleteTxId] = useState(null);
+  const qc = useQueryClient();
+
+  const deleteTxMut = useMutation({
+    mutationFn: (id) => inventoryApi.deleteTransaction(id),
+    onSuccess: () => {
+      qc.invalidateQueries(["transactions"]);
+      toast.success("Transaction deleted permanently");
+      setConfirmDeleteTxId(null);
+    },
+    onError: () => toast.error("Could not delete transaction"),
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["inventory", page, search, activeTab],
@@ -363,7 +377,7 @@ export default function AdminInventory() {
                 key={i}
                 className="text-xs border-b dark:border-gray-700 pb-3 last:border-0"
               >
-                <div className="flex justify-between">
+                <div className="flex justify-between items-start">
                   <span
                     className={`font-semibold capitalize ${
                       tx.type === "purchase"
@@ -377,14 +391,22 @@ export default function AdminInventory() {
                   >
                     {tx.type}
                   </span>
-                  <span
-                    className={
-                      tx.quantity > 0 ? "text-green-600" : "text-red-500"
-                    }
-                  >
-                    {tx.quantity > 0 ? "+" : ""}
-                    {tx.quantity}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={
+                        tx.quantity > 0 ? "text-green-600" : "text-red-500"
+                      }
+                    >
+                      {tx.quantity > 0 ? "+" : ""}
+                      {tx.quantity}
+                    </span>
+                    <button
+                      onClick={() => setConfirmDeleteTxId(tx._id)}
+                      className="text-gray-300 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 </div>
                 <p className="text-gray-500 mt-0.5 line-clamp-1">
                   {tx.variant?.product?.name} · {tx.variant?.size}/
@@ -414,6 +436,19 @@ export default function AdminInventory() {
           />
         )}
       </AnimatePresence>
+
+      {confirmDeleteTxId && (
+        <ConfirmModal
+          title="Delete Transaction?"
+          message="Permanently delete this inventory transaction record? This cannot be undone."
+          confirmText="Delete Transaction"
+          cancelText="Keep Transaction"
+          isDanger
+          isLoading={deleteTxMut.isPending}
+          onConfirm={() => deleteTxMut.mutate(confirmDeleteTxId)}
+          onCancel={() => setConfirmDeleteTxId(null)}
+        />
+      )}
     </div>
   );
 }

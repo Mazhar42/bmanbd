@@ -144,4 +144,31 @@ const getDashboardStats = async (req, res, next) => {
   }
 };
 
-module.exports = { getAllUsers, getUser, updateUser, getDashboardStats };
+const deleteUser = async (req, res, next) => {
+  try {
+    if (req.params.id === req.user._id.toString()) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "You cannot delete your own account",
+        });
+    }
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    res.json({ success: true, message: "User permanently deleted" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  getAllUsers,
+  getUser,
+  updateUser,
+  getDashboardStats,
+  deleteUser,
+};
