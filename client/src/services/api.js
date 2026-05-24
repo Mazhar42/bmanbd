@@ -19,21 +19,28 @@ api.interceptors.request.use(async (config) => {
   const token = useStore.getState().token;
   let csrfToken = useStore.getState().csrfToken;
 
-  // For non-safe methods, ensure we have a CSRF token
+  // For non-safe methods, ensure we have a valid CSRF token
   const isSafeMethod = ["get", "head", "options"].includes(
     config.method?.toLowerCase(),
   );
 
-  if (!isSafeMethod && !csrfToken) {
-    try {
-      // Fetch a new token if we don't have one
-      const { data } = await axios.get(`${baseURL}/auth/csrf`, {
-        withCredentials: true,
-      });
-      csrfToken = data.csrfToken;
-      useStore.getState().setCsrfToken(csrfToken);
-    } catch (err) {
-      console.error("Critical: Failed to fetch CSRF token", err);
+  if (!isSafeMethod) {
+    // The CSRF cookie is httpOnly:false so JS can read it.
+    // If the cookie is gone (e.g. session ended, browser restarted) the
+    // persisted Zustand token is stale — always re-fetch in that case.
+    const cookieMatch = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]+)/);
+    const cookieToken = cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
+
+    if (!cookieToken || cookieToken !== csrfToken) {
+      try {
+        const { data } = await axios.get(`${baseURL}/auth/csrf`, {
+          withCredentials: true,
+        });
+        csrfToken = data.csrfToken;
+        useStore.getState().setCsrfToken(csrfToken);
+      } catch (err) {
+        console.error("Critical: Failed to fetch CSRF token", err);
+      }
     }
   }
 
