@@ -44,3 +44,7 @@ uploads/*
 *.bak
 *.tmp
 node_repl_history
+nginx/templates/default.conf.template
+server/package-lock.json
+mysql-fastitbd_bman_db.sql
+.claude/
